@@ -9,6 +9,7 @@ use Phalcon\Mvc\Url as UrlProvider;
 use Phalcon\Db\Adapter\Pdo\Mysql as PdoMysql;
 use Phalcon\Http\Response;
 use Phalcon\Session\Adapter\Files as Session;
+use Phalcon\Http\Request\File;
 
 
 try{

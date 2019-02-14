@@ -1,0 +1,15 @@
+<h2>
+    プロフィール画像のアップデート
+</h2>
+
+<?php echo $this->tag->form("image/change"); ?>
+
+    <p>
+        <?php echo $this->tag->fileField("image"); ?>
+    </p>
+
+    <p>
+        <?php echo $this->tag->submitButton("送信"); ?>
+    </p>
+
+</form>
