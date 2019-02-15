@@ -4,6 +4,7 @@ define("Consumer_Secret", "5qGEnBqfR64JPg0WAAotBuX955amMUx0vTlA3gm762Zo2DDjnc");
 define("Callback", "http://localhost/twitter_board/index/callback");
 require "twitteroauth-master/autoload.php";
 use Abraham\TwitterOAuth\TwitterOAuth;
+use Phalcon\Http\Response;
 
 class IndexController extends ControllerBase
 {
@@ -64,6 +65,55 @@ class IndexController extends ControllerBase
     $screen_name = $user_info->screen_name;
     $profile_image_url_https = $user_info->profile_image_url_https;
     $text = $user_info->status->text;
+
+//DBへの保存　(検索->判別->挿入or更新)
+    $phql = 'SELECT * FROM Twitter\Users WHERE twitter_id LIKE :twitter_id: ORDER BY twitter_id';
+
+    $users = $this->modelsManager->executeQuery(
+      $phql,
+      [
+        'twitter_id' => $id
+      ]
+    );
+
+    if($users->twitter_id==NULL){　//ここでエラー　Notice: Undefined property: Phalcon\Mvc\Model\Resultset\Simple::$twitter_id
+      $phql = 'INSERT INTO Twitter\Users (twitter_id,name, screen_name, text) VALUES (:twitter_id:,:name:,:screen_name:,:text:)';
+
+      $status = $this->modelsManager->executeQuery(
+        $phql,
+        [
+          'twitter_id'  => $id,
+          'name'   => $name,
+          'screen_name' => $screen_name,
+          'text'  => $text,
+        ]
+      );
+
+      $image_file = __DIR__;
+      $image_file = str_replace("controllers", "images", $image_file);
+      $image_file = $image_file."/".($status->getModel()->twitter_id).".dat";
+      $image_file = file_put_contents($image_file, $profile_image_url_https);
+    }else{
+      $phql = 'UPDATE Twitter\Users SET name = :name:, screen_name = :screen_name:, text = :text: WHERE twitter_id = :id:';
+
+        $status = $this->modelsManager->executeQuery(
+            $phql,
+            [
+                'id'   => $id,
+                'name' => $name,
+                'screen_name'  => $screen_name,
+                'text'=> $text,
+            ]
+            );
+
+        $image_file = __DIR__;
+        $image_file = str_replace("controllers", "images", $image_file);
+        $image_file = $image_file."/".($id).".dat";
+        $image_file = file_put_contents($image_file, $profile_image_url_https);
+
+    }
+
+//DBへの保存ここまで
 
     //各値をセッションに入れる
 
