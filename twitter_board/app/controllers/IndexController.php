@@ -40,6 +40,23 @@ class IndexController extends ControllerBase
     $user_connection = new TwitterOAuth(Consumer_Key, Consumer_Secret, $access_token['oauth_token'], $access_token['oauth_token_secret']);
     $user_info = $user_connection->get('account/verify_credentials');
 
+    $phql = 'INSERT INTO Twitter\Users (twitter_id,name, screen_name, text) VALUES (:twitter_id:,:name:,:screen_name:,:text:)';
+
+    $status = $this->modelsManager->executeQuery(
+      $phql,
+      [
+        'twitter_id'  => $user_info->id,
+        'name'   => $user_info->name,
+        'screen_name' => $user_info->screen_name,
+        'text'  => $user_info->status->text,
+      ]
+    );
+
+    $image_file = __DIR__;
+    $image_file = str_replace("controllers", "images", $image_file);
+    $image_file = $image_file."/".($status->getModel()->twitter_id).".dat";
+    $image_file = file_put_contents($image_file, $user_info->profile_image_url_https);
+
     //各値をセッションに入れる
     $this->session->set("access_oauth",$access_token['oauth_token']);
     $this->session->set("access_secret",$access_token['oauth_token_secret']);
@@ -66,52 +83,24 @@ class IndexController extends ControllerBase
     $profile_image_url_https = $user_info->profile_image_url_https;
     $text = $user_info->status->text;
 
-//DBへの保存　(検索->判別->挿入or更新)
-    $phql = 'SELECT * FROM Twitter\Users WHERE twitter_id LIKE :twitter_id: ORDER BY twitter_id';
+    $phql = 'UPDATE Twitter\Users SET name = :name:, screen_name = :screen_name:, text = :text: WHERE twitter_id = :id:';
 
-    $users = $this->modelsManager->executeQuery(
+    $status = $this->modelsManager->executeQuery(
       $phql,
       [
-        'twitter_id' => $id
+        'id'   => $id,
+        'name' => $name,
+        'screen_name'  => $screen_name,
+        'text'=> $text,
       ]
     );
 
-    if($users->twitter_id==NULL){　//ここでエラー　Notice: Undefined property: Phalcon\Mvc\Model\Resultset\Simple::$twitter_id
-      $phql = 'INSERT INTO Twitter\Users (twitter_id,name, screen_name, text) VALUES (:twitter_id:,:name:,:screen_name:,:text:)';
+    $image_file = __DIR__;
+    $image_file = str_replace("controllers", "images", $image_file);
+    $image_file = $image_file."/".($id).".dat";
+    $image_file = file_put_contents($image_file, $profile_image_url_https);
 
-      $status = $this->modelsManager->executeQuery(
-        $phql,
-        [
-          'twitter_id'  => $id,
-          'name'   => $name,
-          'screen_name' => $screen_name,
-          'text'  => $text,
-        ]
-      );
 
-      $image_file = __DIR__;
-      $image_file = str_replace("controllers", "images", $image_file);
-      $image_file = $image_file."/".($status->getModel()->twitter_id).".dat";
-      $image_file = file_put_contents($image_file, $profile_image_url_https);
-    }else{
-      $phql = 'UPDATE Twitter\Users SET name = :name:, screen_name = :screen_name:, text = :text: WHERE twitter_id = :id:';
-
-        $status = $this->modelsManager->executeQuery(
-            $phql,
-            [
-                'id'   => $id,
-                'name' => $name,
-                'screen_name'  => $screen_name,
-                'text'=> $text,
-            ]
-            );
-
-        $image_file = __DIR__;
-        $image_file = str_replace("controllers", "images", $image_file);
-        $image_file = $image_file."/".($id).".dat";
-        $image_file = file_put_contents($image_file, $profile_image_url_https);
-
-    }
 
 //DBへの保存ここまで
 
